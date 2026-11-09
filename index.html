@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Louisiana Document Timeline</title>
+  <meta name="description" content="Add photos and scans of physical documents — land abstracts, deeds, surveys, letters — to a shared timeline of Louisiana history.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <div>
+        <h1>Louisiana Document Timeline</h1>
+        <p class="tagline">Land abstracts, deeds, surveys and family papers, placed in time.</p>
+      </div>
+      <div class="header-actions">
+        <button id="addBtn" class="btn primary">+ Add a document</button>
+        <details class="menu">
+          <summary class="btn">Collection ▾</summary>
+          <div class="menu-panel">
+            <button id="exportBtn" class="btn ghost">Export collection (.json)</button>
+            <label class="btn ghost file-label">Import collection…
+              <input id="importInput" type="file" accept="application/json,.json" hidden>
+            </label>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <section class="filters wrap" aria-label="Filter documents">
+    <input id="q" type="search" placeholder="Search titles, names, descriptions, transcriptions…" aria-label="Search">
+    <select id="fParish" aria-label="Parish"><option value="">All parishes</option></select>
+    <select id="fType" aria-label="Document type"><option value="">All types</option></select>
+    <label class="check"><input id="fEras" type="checkbox" checked> Show history markers</label>
+    <span id="count" class="count"></span>
+  </section>
+
+  <main class="wrap">
+    <ol id="timeline" class="timeline" aria-live="polite"></ol>
+    <p id="empty" class="empty" hidden>No documents match. Try clearing the filters, or add one.</p>
+  </main>
+
+  <!-- Add / edit form -->
+  <dialog id="formDlg" class="dlg">
+    <form id="docForm" method="dialog">
+      <header class="dlg-head">
+        <h2 id="formTitle">Add a document</h2>
+        <button type="button" class="x" data-close aria-label="Close">×</button>
+      </header>
+      <div class="dlg-body grid">
+        <label class="span2">Title <span class="req">*</span>
+          <input name="title" required maxlength="200" placeholder="e.g. Abstract of title, Lot 4, Section 12">
+        </label>
+
+        <fieldset class="span2 date-set">
+          <legend>Date of the document</legend>
+          <label>Year <input name="year" type="number" min="1500" max="2100" placeholder="1923"></label>
+          <label>Month
+            <select name="month">
+              <option value="">—</option>
+              <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+              <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+              <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+              <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+            </select>
+          </label>
+          <label>Day <input name="day" type="number" min="1" max="31"></label>
+          <label class="check"><input name="circa" type="checkbox"> Approximate (circa)</label>
+          <p class="hint">Leave the year blank if it's unknown. The document will go under “Undated”.</p>
+        </fieldset>
+
+        <label>Parish
+          <select name="parish"><option value="">Unknown</option></select>
+        </label>
+        <label>Document type
+          <select name="type"></select>
+        </label>
+
+        <label class="span2">Place / legal description
+          <input name="place" maxlength="300" placeholder="Town, plantation, or Section‑Township‑Range">
+        </label>
+
+        <fieldset class="span2 tags">
+          <legend>Condition &amp; provenance</legend>
+          <div id="condBoxes" class="tag-boxes"></div>
+        </fieldset>
+
+        <label class="span2">People named
+          <input name="people" maxlength="400" placeholder="Grantor, grantee, surveyor, notary… (comma‑separated)">
+        </label>
+
+        <label class="span2">Story / description
+          <textarea name="description" rows="3" placeholder="Where it came from, how it survived, why it matters"></textarea>
+        </label>
+
+        <label class="span2">Transcription
+          <textarea name="transcription" rows="4" placeholder="Type out what the document says, as best you can read it"></textarea>
+        </label>
+
+        <label>Original held by
+          <input name="heldBy" maxlength="200" placeholder="Family, courthouse, archive…">
+        </label>
+        <label>Contributed by
+          <input name="contributor" maxlength="120" placeholder="Your name (optional)">
+        </label>
+
+        <div class="span2">
+          <label>Photos or scans (JPG, PNG, PDF)
+            <input id="fileInput" type="file" accept="image/*,application/pdf" multiple>
+          </label>
+          <ul id="fileList" class="file-list"></ul>
+        </div>
+      </div>
+      <footer class="dlg-foot">
+        <button type="button" id="deleteBtn" class="btn danger" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Detail view -->
+  <dialog id="viewDlg" class="dlg wide">
+    <header class="dlg-head">
+      <h2 id="viewTitle"></h2>
+      <button type="button" class="x" data-close aria-label="Close">×</button>
+    </header>
+    <div id="viewBody" class="dlg-body"></div>
+    <footer class="dlg-foot">
+      <span class="spacer"></span>
+      <button type="button" id="editBtn" class="btn">Edit</button>
+      <button type="button" class="btn primary" data-close>Close</button>
+    </footer>
+  </dialog>
+
+  <footer class="site-foot wrap">
+    <p>Documents are saved in this browser. Use <strong>Collection → Export</strong> to back them up or share them with someone else, who can then <strong>Import</strong> them.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
