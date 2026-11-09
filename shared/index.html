@@ -1,0 +1,852 @@
+<title>Louisiana Document Timeline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one centered column; a vertical rail with year nodes, document cards hung off it. */
+:root {
+  --bg: #f3efe6;
+  --paper: #fffdf8;
+  --ink: #2b2620;
+  --muted: #6b6257;
+  --line: #d9cfbf;
+  --accent: #2f5d50;
+  --accent-ink: #ffffff;
+  --rust: #a2482b;
+  --era: #85775c;
+  --warn-bg: #fbf0d9;
+  --warn-ink: #6d4c12;
+  --shadow: 0 1px 2px rgba(40,30,10,.06), 0 4px 14px rgba(40,30,10,.06);
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Courier New", ui-monospace, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1a17; --paper: #25231f; --ink: #ece6da; --muted: #a99f90; --line: #3e3a33;
+    --accent: #6fae99; --accent-ink: #10201b; --rust: #e08a68; --era: #b6a684;
+    --warn-bg: #3a3020; --warn-ink: #f0d9a8; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1a17; --paper: #25231f; --ink: #ece6da; --muted: #a99f90; --line: #3e3a33;
+  --accent: #6fae99; --accent-ink: #10201b; --rust: #e08a68; --era: #b6a684;
+  --warn-bg: #3a3020; --warn-ink: #f0d9a8; --shadow: none; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--serif); margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 980px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+.site-header { background: var(--paper); border-bottom: 1px solid var(--line); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 1.7rem; text-wrap: balance; }
+.tagline { margin: 2px 0 0; color: var(--muted); }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--paper); cursor: pointer; font: .92rem var(--sans); color: var(--ink);
+}
+.btn:hover { border-color: var(--muted); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--rust); border-color: var(--rust); background: transparent; }
+.btn.small { padding: 5px 10px; font-size: .84rem; }
+.btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.notice { margin-top: 16px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--paper); font: .9rem/1.45 var(--sans); color: var(--muted); }
+.notice strong { color: var(--ink); }
+
+/* Review queue + pending */
+.panel { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--warn-bg); color: var(--warn-ink); padding: 12px 14px; font-family: var(--sans); }
+.panel h2 { margin: 0 0 8px; font: 600 1rem var(--sans); }
+.panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.qrow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.qrow .qmain { flex: 1 1 220px; min-width: 0; }
+.qrow .qtitle { font: 600 .95rem var(--serif); }
+.qrow .meta { font-size: .8rem; }
+.qrow .qact { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-block: 18px 6px; font: .92rem var(--sans); }
+.filters input[type=search] { flex: 1 1 240px; min-width: 0; }
+.filters input[type=search], .filters select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); max-width: 100%; }
+.check { display: inline-flex; gap: 6px; align-items: center; }
+.count { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.timeline { list-style: none; margin: 18px 0 40px; padding: 0 0 0 28px; position: relative; }
+.timeline::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+.year-head { position: relative; margin: 26px 0 10px; font-size: 1.35rem; font-weight: bold; font-variant-numeric: tabular-nums; }
+.year-head::before { content: ""; position: absolute; left: -25px; top: .45em; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 3px solid var(--accent); }
+.year-head .era-span { font: normal .85rem var(--sans); color: var(--muted); margin-left: 8px; }
+.era { position: relative; margin: 14px 0; color: var(--era); font-style: italic; font-size: .95rem; }
+.era::before { content: ""; position: absolute; left: -22px; top: .55em; width: 8px; height: 8px; transform: rotate(45deg); background: var(--era); }
+.era b { font-style: normal; }
+
+.card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: start; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin: 10px 0; box-shadow: var(--shadow); cursor: pointer; text-align: left; width: 100%; }
+.card:hover { border-color: var(--muted); }
+.thumb { width: 96px; height: 96px; flex: none; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; color: var(--muted); font: .75rem var(--sans); text-align: center; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb.broken img, .shot.broken img { display: none; }
+.thumb.broken::after { content: "Photo not available"; }
+.card h3 { margin: 0 0 2px; font-size: 1.08rem; text-wrap: balance; }
+.meta { color: var(--muted); font: .85rem/1.4 var(--sans); }
+.card p.desc { margin: 6px 0 0; font-size: .95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chip { font: .72rem var(--sans); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.chip.fire { color: var(--rust); border-color: var(--rust); }
+.chip.type { color: var(--accent); border-color: var(--accent); }
+.empty { text-align: center; color: var(--muted); padding: 40px 0; font-family: var(--sans); }
+
+.dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--ink); }
+.dlg.wide { width: min(920px, calc(100vw - 24px)); }
+.dlg.narrow { width: min(420px, calc(100vw - 24px)); }
+.dlg::backdrop { background: rgba(20,16,10,.55); }
+.dlg-inner { display: flex; flex-direction: column; max-height: calc(100vh - 26px); }
+.dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.dlg-head h2 { margin: 0; font-size: 1.25rem; min-width: 0; }
+.x { border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--muted); }
+.dlg-body { padding: 16px 18px; overflow: auto; }
+.dlg-foot { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+.progress { font: .85rem var(--sans); color: var(--muted); }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; font: .92rem var(--sans); }
+.span2 { grid-column: 1 / -1; }
+.grid label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.grid label.check { flex-direction: row; }
+.grid input:not([type=checkbox]), .grid select, .grid textarea { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); width: 100%; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0; min-width: 0; }
+legend { padding: 0 4px; color: var(--muted); }
+.date-set { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 10px; align-items: end; }
+.date-set .hint { grid-column: 1 / -1; }
+.hint { margin: 0; color: var(--muted); font-size: .82rem; }
+.req { color: var(--rust); }
+.tag-boxes { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.file-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.file-list li { position: relative; width: 84px; }
+.file-list .thumb { width: 84px; height: 84px; }
+.file-list button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); cursor: pointer; line-height: 1; color: var(--ink); }
+.file-list small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.shot { display: block; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); aspect-ratio: 3 / 4; max-width: 100%; cursor: zoom-in; padding: 0; width: 100%; }
+.shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot.broken::after { content: "Photo not available to you"; display: grid; place-items: center; height: 100%; color: var(--muted); font: .8rem var(--sans); padding: 8px; text-align: center; }
+.pdf { display: grid; place-items: center; height: 100%; color: var(--muted); font: .85rem var(--sans); padding: 8px; text-align: center; text-decoration: none; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 0 16px; font: .92rem var(--sans); }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.transcript { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: .9rem var(--mono); overflow-wrap: anywhere; }
+
+.lightbox { width: calc(100vw - 24px); height: calc(100vh - 24px); max-width: none; max-height: none; background: #111; border: 0; border-radius: 12px; padding: 0; color: #eee; }
+.lightbox::backdrop { background: rgba(0,0,0,.8); }
+.lb-inner { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.lb-inner img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lb-btn { position: absolute; background: rgba(0,0,0,.55); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; width: 44px; height: 44px; font-size: 1.4rem; cursor: pointer; }
+.lb-prev { left: 12px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 12px; top: 50%; transform: translateY(-50%); }
+.lb-close { right: 12px; top: 12px; }
+.lb-cap { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font: .85rem var(--sans); color: #ccc; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font: .9rem var(--sans); box-shadow: var(--shadow); z-index: 20; max-width: calc(100vw - 32px); }
+.site-foot { color: var(--muted); font-size: .88rem; padding-block: 0 32px; }
+
+@media (max-width: 600px) {
+  .grid { grid-template-columns: 1fr; }
+  .date-set { grid-template-columns: 1fr 1fr; }
+  .card { grid-template-columns: 64px minmax(0, 1fr); }
+  .card .thumb { width: 64px; height: 64px; }
+  .count { margin-left: 0; width: 100%; }
+  h1 { font-size: 1.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div>
+      <h1>Louisiana Document Timeline</h1>
+      <p class="tagline">Land abstracts, deeds, surveys and family papers, placed in time.</p>
+    </div>
+    <div class="header-actions">
+      <button id="addBtn" class="btn primary" hidden>+ Add a document</button>
+      <button id="importBtn" class="btn" hidden>Import from file…</button>
+      <input id="importInput" type="file" accept="application/json,.json" hidden>
+      <button id="exportBtn" class="btn" hidden>Export backup</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <p id="notice" class="notice">Connecting to the shared timeline…</p>
+  <section id="queue" class="panel" hidden aria-label="Submissions waiting for review">
+    <h2 id="queueTitle">Waiting for your review</h2>
+    <ul id="queueList"></ul>
+  </section>
+  <section id="mine" class="panel" hidden aria-label="Your submissions">
+    <h2>Your submissions waiting for review</h2>
+    <ul id="mineList"></ul>
+  </section>
+</div>
+
+<section class="filters wrap" aria-label="Filter documents">
+  <input id="q" type="search" placeholder="Search titles, names, descriptions, transcriptions…" aria-label="Search">
+  <select id="fParish" aria-label="Parish"><option value="">All parishes</option></select>
+  <select id="fType" aria-label="Document type"><option value="">All types</option></select>
+  <label class="check"><input id="fEras" type="checkbox" checked> History markers</label>
+  <span id="count" class="count"></span>
+</section>
+
+<main class="wrap">
+  <ol id="timeline" class="timeline" aria-live="polite"></ol>
+  <p id="empty" class="empty">The timeline is loading. Documents appear here by year once it connects.</p>
+</main>
+
+<footer class="site-foot wrap">
+  <p>Everyone with access to this page sees the same timeline. Photos are stored with the page, so they stay available whoever opens it.</p>
+</footer>
+
+<!-- Add / edit form -->
+<dialog id="formDlg" class="dlg">
+  <form id="docForm" class="dlg-inner" novalidate>
+    <header class="dlg-head">
+      <h2 id="formTitle">Add a document</h2>
+      <button type="button" class="x" data-close aria-label="Close">×</button>
+    </header>
+    <div class="dlg-body grid">
+      <p id="formNote" class="hint span2" hidden></p>
+      <label class="span2">Title <span class="req">*</span>
+        <input id="f_title" name="title" required maxlength="200" placeholder="e.g. Abstract of title, Lot 4, Section 12">
+      </label>
+      <fieldset class="span2 date-set">
+        <legend>Date of the document</legend>
+        <label>Year <input id="f_year" name="year" type="number" min="1500" max="2100" placeholder="1923"></label>
+        <label>Month
+          <select id="f_month" name="month">
+            <option value="">—</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+            <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option>
+            <option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+          </select>
+        </label>
+        <label>Day <input id="f_day" name="day" type="number" min="1" max="31"></label>
+        <label class="check"><input id="f_circa" name="circa" type="checkbox"> Approximate (circa)</label>
+        <p class="hint">Leave the year blank if it's unknown. The document will go under “Undated”.</p>
+      </fieldset>
+      <label>Parish <select id="f_parish" name="parish"><option value="">Unknown</option></select></label>
+      <label>Document type <select id="f_type" name="type"></select></label>
+      <label class="span2">Place / legal description
+        <input id="f_place" name="place" maxlength="300" placeholder="Town, plantation, or Section‑Township‑Range">
+      </label>
+      <fieldset class="span2"><legend>Condition &amp; provenance</legend><div id="condBoxes" class="tag-boxes"></div></fieldset>
+      <label class="span2">People named
+        <input id="f_people" name="people" maxlength="400" placeholder="Grantor, grantee, surveyor, notary… (comma‑separated)">
+      </label>
+      <label class="span2">Story / description
+        <textarea id="f_description" name="description" rows="3" maxlength="4000" placeholder="Where it came from, how it survived, why it matters"></textarea>
+      </label>
+      <label class="span2">Transcription
+        <textarea id="f_transcription" name="transcription" rows="4" maxlength="40000" placeholder="Type out what the document says, as best you can read it"></textarea>
+      </label>
+      <label>Original held by <input id="f_heldBy" name="heldBy" maxlength="200" placeholder="Family, courthouse, archive…"></label>
+      <label>Contributed by <input id="f_contributor" name="contributor" maxlength="120" placeholder="Name to credit (optional)"></label>
+      <div class="span2" id="fileBlock">
+        <label>Photos or scans (JPG, PNG, WebP, PDF)
+          <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple>
+        </label>
+        <p id="fileHint" class="hint">Large photos are resized to 3200 pixels on the long side, which keeps handwriting legible.</p>
+        <ul id="fileList" class="file-list"></ul>
+      </div>
+    </div>
+    <footer class="dlg-foot">
+      <button type="button" id="deleteBtn" class="btn danger" hidden>Delete</button>
+      <span id="formProgress" class="progress" aria-live="polite"></span>
+      <span class="spacer"></span>
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" id="saveBtn" class="btn primary">Save</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- Detail view -->
+<dialog id="viewDlg" class="dlg wide">
+  <div class="dlg-inner">
+    <header class="dlg-head">
+      <h2 id="viewTitle"></h2>
+      <button type="button" class="x" data-close aria-label="Close">×</button>
+    </header>
+    <div id="viewBody" class="dlg-body"></div>
+    <footer class="dlg-foot">
+      <span class="spacer"></span>
+      <button type="button" id="editBtn" class="btn" hidden>Edit</button>
+      <button type="button" class="btn primary" data-close>Close</button>
+    </footer>
+  </div>
+</dialog>
+
+<!-- Confirm -->
+<dialog id="confirmDlg" class="dlg narrow">
+  <div class="dlg-inner">
+    <div class="dlg-body"><p id="confirmMsg" style="margin:0"></p></div>
+    <footer class="dlg-foot">
+      <span class="spacer"></span>
+      <button type="button" id="confirmNo" class="btn">Cancel</button>
+      <button type="button" id="confirmYes" class="btn danger">Delete</button>
+    </footer>
+  </div>
+</dialog>
+
+<!-- Lightbox -->
+<dialog id="lightbox" class="lightbox">
+  <div class="lb-inner">
+    <img id="lbImg" alt="">
+    <button type="button" class="lb-btn lb-prev" id="lbPrev" aria-label="Previous page">‹</button>
+    <button type="button" class="lb-btn lb-next" id="lbNext" aria-label="Next page">›</button>
+    <button type="button" class="lb-btn lb-close" data-close aria-label="Close">×</button>
+    <div class="lb-cap" id="lbCap"></div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Reference data ----------
+  const PARISHES = ["Acadia","Allen","Ascension","Assumption","Avoyelles","Beauregard","Bienville","Bossier","Caddo","Calcasieu","Caldwell","Cameron","Catahoula","Claiborne","Concordia","De Soto","East Baton Rouge","East Carroll","East Feliciana","Evangeline","Franklin","Grant","Iberia","Iberville","Jackson","Jefferson","Jefferson Davis","Lafayette","Lafourche","LaSalle","Lincoln","Livingston","Madison","Morehouse","Natchitoches","Orleans","Ouachita","Plaquemines","Pointe Coupee","Rapides","Red River","Richland","Sabine","St. Bernard","St. Charles","St. Helena","St. James","St. John the Baptist","St. Landry","St. Martin","St. Mary","St. Tammany","Tangipahoa","Tensas","Terrebonne","Union","Vermilion","Vernon","Washington","Webster","West Baton Rouge","West Carroll","West Feliciana","Winn"];
+  const TYPES = ["Land abstract","Deed / act of sale","Land grant / patent","Survey / plat","Mortgage / lien","Succession / will","Marriage contract","Tax record","Court record","Church / sacramental record","Map","Letter","Photograph","Other"];
+  const CONDITIONS = ["Original","Certified copy","Fire-damaged","Water / flood-damaged","Fragile","Incomplete","French","Spanish"];
+  const ERAS = [
+    [1699,"Iberville and Bienville establish French Louisiana"],[1718,"New Orleans founded"],
+    [1763,"Louisiana passes to Spain (Treaty of Paris)"],[1765,"Acadian exiles begin arriving"],
+    [1800,"Spain retrocedes Louisiana to France"],[1803,"Louisiana Purchase"],
+    [1805,"Territory of Orleans divided into counties"],[1807,"Territory reorganized into 19 parishes"],
+    [1812,"Louisiana becomes the 18th state"],[1861,"Louisiana secedes; Civil War begins"],
+    [1865,"Civil War ends"],[1927,"Great Mississippi Flood"],[2005,"Hurricanes Katrina and Rita"],[2016,"Great Flood of 2016"]
+  ];
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const FIELDS = ["title","year","month","day","parish","type","place","people","description","transcription","heldBy","contributor"];
+  const OK_TYPES = ["image/jpeg","image/png","image/webp","image/gif","application/pdf"];
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const toInt = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const blobUrl = id => "/_blob/" + encodeURIComponent(id);
+  const isImg = f => (f.type || "").startsWith("image/");
+  const dateLabel = d => {
+    if (!d.year) return "Date unknown";
+    let s = d.month ? MONTHS[d.month - 1] + " " : "";
+    if (d.month && d.day) s += d.day + ", ";
+    return (d.circa ? "c. " : "") + s + d.year;
+  };
+  const sortKey = d => d.year ? d.year * 10000 + (d.month || 0) * 100 + (d.day || 0) : Infinity;
+
+  // ---------- State ----------
+  const S = {
+    db: null, user: null, assets: null, downloads: null,
+    uid: null, isAdmin: false, canSubmit: false, canDeleteAssets: false,
+    docs: [], queue: [], mine: [], names: {}, loaded: false
+  };
+
+  // ---------- UI helpers ----------
+  let toastTimer;
+  function toast(msg, ms = 3500) {
+    const t = $("#toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+  }
+  function confirmBox(msg, yes = "Delete") {
+    return new Promise(res => {
+      $("#confirmMsg").textContent = msg; $("#confirmYes").textContent = yes;
+      const dlg = $("#confirmDlg");
+      const done = v => { dlg.close(); $("#confirmYes").onclick = $("#confirmNo").onclick = null; res(v); };
+      $("#confirmYes").onclick = () => done(true);
+      $("#confirmNo").onclick = () => done(false);
+      dlg.oncancel = () => done(false);
+      dlg.showModal();
+    });
+  }
+  function errText(e) {
+    const c = e && e.code;
+    if (c === "quota_exceeded" || c === "quota_or_state") return "Storage for this timeline is full. Remove some files or documents first.";
+    if (c === "too_large") return "That file is too large (the limit is 20 MB).";
+    if (c === "unsupported_type") return "That file type isn't supported. Use JPG, PNG, WebP or PDF.";
+    if (c === "rate_limited" || c === "resource_exhausted") return "Too many changes at once. Wait a moment and try again.";
+    if (c === "invalid_argument") return "That change wasn't accepted. You may not have permission, or the entry is too long.";
+    return "Something went wrong saving. Check your connection and try again.";
+  }
+
+  // Images that fail to load (for example, a viewer outside the owner's organization) show a placeholder.
+  document.addEventListener("error", e => {
+    const t = e.target;
+    if (t && t.tagName === "IMG") { const box = t.closest(".thumb, .shot"); if (box) box.classList.add("broken"); }
+  }, true);
+
+  // ---------- Selects ----------
+  const fill = (sel, vals) => vals.forEach(v => sel.append(new Option(v, v)));
+  fill($("#fParish"), PARISHES); fill($("#fType"), TYPES);
+  fill($("#f_parish"), PARISHES); fill($("#f_type"), TYPES);
+  $("#condBoxes").innerHTML = CONDITIONS.map((c, i) => `<label class="check"><input type="checkbox" id="cond${i}" name="cond" value="${esc(c)}"> ${esc(c)}</label>`).join("");
+
+  // ---------- Rendering ----------
+  function matches(doc) {
+    const q = $("#q").value.trim().toLowerCase(), p = $("#fParish").value, t = $("#fType").value;
+    if (p && doc.parish !== p) return false;
+    if (t && doc.type !== t) return false;
+    if (q) {
+      const hay = [doc.title, doc.place, doc.people, doc.description, doc.transcription, doc.heldBy, doc.contributor, doc.parish, doc.type, ...(doc.conditions || [])].join(" ").toLowerCase();
+      if (!q.split(/\s+/).every(w => hay.includes(w))) return false;
+    }
+    return true;
+  }
+  function thumbHtml(doc) {
+    const files = doc.files || [];
+    const img = files.find(isImg);
+    if (img) return `<div class="thumb"><img src="${blobUrl(img.asset)}" alt="" loading="lazy"></div>`;
+    return `<div class="thumb">${files.length ? "PDF" : "No image yet"}</div>`;
+  }
+  function chipsHtml(doc) {
+    return `<div class="chips"><span class="chip type">${esc(doc.type)}</span>${(doc.conditions || []).map(c => `<span class="chip${/fire/i.test(c) ? " fire" : ""}">${esc(c)}</span>`).join("")}</div>`;
+  }
+  function creditFor(doc) {
+    if (doc.contributor) return doc.contributor;
+    const p = doc.submittedBy && S.names[doc.submittedBy];
+    return p && p.name ? p.name : "";
+  }
+  function cardHtml(doc) {
+    const n = (doc.files || []).length;
+    const bits = [dateLabel(doc), doc.parish ? doc.parish + " Parish" : null, doc.place, n > 1 ? n + " files" : null].filter(Boolean);
+    return `<li><button class="card" data-id="${esc(doc.id)}">${thumbHtml(doc)}
+      <div><h3>${esc(doc.title)}</h3><div class="meta">${bits.map(esc).join(" · ")}</div>
+      ${doc.description ? `<p class="desc">${esc(doc.description)}</p>` : ""}${chipsHtml(doc)}</div></button></li>`;
+  }
+
+  let renderSeq = 0;
+  async function render() {
+    const seq = ++renderSeq;
+    // Resolve names of contributors on screen (cheap, cached by the platform).
+    const ids = [...new Set([...S.docs, ...S.queue].map(d => d.submittedBy).filter(Boolean))];
+    if (S.user && ids.length) {
+      try { S.names = await S.user.profiles(ids); } catch {}
+      if (seq !== renderSeq) return;
+    }
+    renderTimeline(); renderQueue(); renderMine();
+  }
+
+  function renderTimeline() {
+    const list = S.docs.filter(matches).sort((a, b) => sortKey(a) - sortKey(b) || String(a.title).localeCompare(b.title));
+    const dated = list.filter(d => d.year), undated = list.filter(d => !d.year);
+    const years = [...new Set(dated.map(d => d.year))];
+    const eras = $("#fEras").checked && years.length ? ERAS.filter(([y]) => y >= years[0] - 25 && y <= years[years.length - 1] + 25) : [];
+    let html = "", ei = 0;
+    const eraLi = ([y, l]) => `<li class="era"><b>${y}</b> — ${esc(l)}</li>`;
+    for (const y of years) {
+      while (ei < eras.length && eras[ei][0] < y) html += eraLi(eras[ei++]);
+      const same = eras[ei] && eras[ei][0] === y ? eras[ei++] : null;
+      html += `<li class="year-head">${y}${same ? `<span class="era-span">${esc(same[1])}</span>` : ""}</li>`;
+      html += dated.filter(d => d.year === y).map(cardHtml).join("");
+    }
+    while (ei < eras.length) html += eraLi(eras[ei++]);
+    if (undated.length) html += `<li class="year-head">Undated</li>` + undated.map(cardHtml).join("");
+    $("#timeline").innerHTML = html;
+
+    const filtering = $("#q").value || $("#fParish").value || $("#fType").value;
+    const empty = $("#empty");
+    empty.hidden = list.length > 0;
+    if (!S.loaded) empty.textContent = "The timeline is loading. Documents appear here by year once it connects.";
+    else if (!S.docs.length) empty.textContent = S.isAdmin ? "No documents yet. Click “Add a document” to put the first one on the timeline."
+      : S.canSubmit ? "No documents yet. Click “Add a document” to submit the first one." : "No documents have been added yet.";
+    else empty.textContent = "No documents match. Try clearing the filters.";
+    $("#count").textContent = !S.loaded ? "" : filtering ? `${list.length} of ${S.docs.length} documents` : `${S.docs.length} document${S.docs.length === 1 ? "" : "s"}`;
+  }
+
+  function qRow(item, actions) {
+    const p = item.submittedBy && S.names[item.submittedBy];
+    const who = item.contributor || (p && p.name) || "Someone";
+    const n = (item.files || []).length;
+    return `<li class="qrow">${thumbHtml(item)}<div class="qmain"><div class="qtitle">${esc(item.title)}</div>
+      <div class="meta">${esc([dateLabel(item), item.parish ? item.parish + " Parish" : null, item.type, n ? n + " file" + (n > 1 ? "s" : "") : "no files", S.isAdmin ? "from " + who : null].filter(Boolean).join(" · "))}</div></div>
+      <div class="qact">${actions}</div></li>`;
+  }
+  function renderQueue() {
+    const box = $("#queue");
+    box.hidden = !S.isAdmin || !S.queue.length;
+    if (box.hidden) return;
+    $("#queueTitle").textContent = `Waiting for your review (${S.queue.length})`;
+    $("#queueList").innerHTML = S.queue.map(item => qRow(item,
+      `<button class="btn small" data-qview="${esc(item.id)}">Review</button>
+       <button class="btn small primary" data-approve="${esc(item.id)}">Approve</button>
+       <button class="btn small danger" data-reject="${esc(item.id)}">Decline</button>`)).join("");
+  }
+  function renderMine() {
+    const box = $("#mine");
+    box.hidden = S.isAdmin || !S.mine.length;
+    if (box.hidden) return;
+    $("#mineList").innerHTML = S.mine.map(item => qRow(item,
+      `<button class="btn small" data-medit="${esc(item.id)}">Edit</button>
+       <button class="btn small danger" data-mwithdraw="${esc(item.id)}">Withdraw</button>`)).join("");
+  }
+
+  function setNotice() {
+    const n = $("#notice");
+    if (!S.db) return;
+    if (S.isAdmin) n.innerHTML = "<strong>You can edit this timeline.</strong> Documents you add go straight onto it. Documents other people submit wait below for your review.";
+    else if (S.canSubmit) n.innerHTML = "<strong>You can add documents.</strong> They're reviewed before they appear on the timeline." + (S.assets ? "" : " Photo uploads aren't available to your account here, so describe the document and the owner can attach photos.");
+    else n.innerHTML = "<strong>You're viewing the shared timeline.</strong> To add documents, ask the person who shared it for Contributor access.";
+  }
+
+  // ---------- Detail view ----------
+  let viewing = null, viewingSource = "docs";
+  function openView(doc, source = "docs") {
+    viewing = doc; viewingSource = source;
+    $("#viewTitle").textContent = doc.title;
+    const files = doc.files || [];
+    const gallery = files.map((f, i) => isImg(f)
+      ? `<button type="button" class="shot" data-lb="${i}" aria-label="Open ${esc(f.name || "photo")} full size"><img src="${blobUrl(f.asset)}" alt="${esc(f.name || "")}" loading="lazy"></button>`
+      : `<div class="shot"><a class="pdf" href="${blobUrl(f.asset)}" target="_blank" rel="noopener">📄<br>${esc(f.name || "PDF")}<br>Open PDF</a></div>`).join("");
+    const credit = creditFor(doc);
+    const facts = [["Date", dateLabel(doc)], ["Type", doc.type], ["Parish", doc.parish ? doc.parish + " Parish" : "Unknown"], ["Place", doc.place],
+      ["Condition", (doc.conditions || []).join(", ")], ["People named", doc.people], ["Original held by", doc.heldBy], ["Contributed by", credit]].filter(([, v]) => v);
+    $("#viewBody").innerHTML = `
+      ${source === "queue" ? `<p class="notice" style="margin-top:0">This is a submission waiting for review. It isn't on the timeline yet.</p>` : ""}
+      ${gallery ? `<div class="gallery">${gallery}</div>` : `<p class="hint">No photos or scans attached yet.</p>`}
+      <dl class="facts">${facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      ${doc.description ? `<h3>Story</h3><p>${esc(doc.description).replace(/\n/g, "<br>")}</p>` : ""}
+      ${doc.transcription ? `<h3>Transcription</h3><div class="transcript">${esc(doc.transcription)}</div>` : ""}`;
+    $("#editBtn").hidden = !(S.isAdmin && source === "docs");
+    $("#viewDlg").showModal();
+  }
+  $("#viewBody").addEventListener("click", e => {
+    const b = e.target.closest("[data-lb]");
+    if (b) openLightbox(viewing, +b.dataset.lb);
+  });
+  $("#editBtn").addEventListener("click", () => { $("#viewDlg").close(); openForm({ doc: viewing, target: "docs" }); });
+
+  // ---------- Lightbox ----------
+  let lbImgs = [], lbI = 0;
+  function openLightbox(doc, fileIndex) {
+    const files = doc.files || [];
+    lbImgs = files.filter(isImg);
+    lbI = Math.max(0, lbImgs.indexOf(files[fileIndex]));
+    showLb(); $("#lightbox").showModal();
+  }
+  function showLb() {
+    const f = lbImgs[lbI]; if (!f) return;
+    $("#lbImg").src = blobUrl(f.asset);
+    $("#lbCap").textContent = `${f.name || "Photo"} · ${lbI + 1} of ${lbImgs.length}`;
+    $("#lbPrev").hidden = $("#lbNext").hidden = lbImgs.length < 2;
+  }
+  $("#lbPrev").onclick = () => { lbI = (lbI - 1 + lbImgs.length) % lbImgs.length; showLb(); };
+  $("#lbNext").onclick = () => { lbI = (lbI + 1) % lbImgs.length; showLb(); };
+  $("#lightbox").addEventListener("keydown", e => { if (e.key === "ArrowLeft") $("#lbPrev").click(); if (e.key === "ArrowRight") $("#lbNext").click(); });
+
+  // ---------- Form ----------
+  const form = $("#docForm");
+  let formCtx = null;      // { doc, target: "docs" | "mine" }
+  let pending = [];        // [{asset,name,type}] existing or [{file,name,type,preview}] new
+  let saving = false;
+
+  function renderFiles() {
+    $("#fileList").innerHTML = pending.map((f, i) => {
+      const src = f.preview || (f.asset && blobUrl(f.asset));
+      return `<li><div class="thumb">${isImg(f) && src ? `<img src="${src}" alt="">` : "PDF"}</div>
+        <small title="${esc(f.name)}">${esc(f.name)}</small>
+        <button type="button" data-rm="${i}" aria-label="Remove ${esc(f.name)}">×</button></li>`;
+    }).join("");
+  }
+  function openForm({ doc = null, target }) {
+    formCtx = { doc, target };
+    form.reset();
+    const direct = target === "docs";
+    $("#formTitle").textContent = doc ? "Edit document" : direct ? "Add a document" : "Submit a document";
+    $("#saveBtn").textContent = direct ? "Save" : doc ? "Save changes" : "Submit for review";
+    $("#formNote").hidden = direct;
+    $("#formNote").textContent = "Your submission is reviewed before it appears on the timeline. You can edit or withdraw it until then.";
+    $("#deleteBtn").hidden = !(doc && direct);
+    $("#fileBlock").hidden = !S.assets;
+    pending = doc ? (doc.files || []).map(f => ({ ...f })) : [];
+    if (doc) {
+      for (const k of FIELDS) $("#f_" + k).value = doc[k] ?? "";
+      $("#f_circa").checked = !!doc.circa;
+      form.querySelectorAll('input[name="cond"]').forEach(b => { b.checked = (doc.conditions || []).includes(b.value); });
+    } else $("#f_type").value = "Land abstract";
+    $("#formProgress").textContent = "";
+    renderFiles();
+    $("#formDlg").showModal();
+    $("#f_title").focus();
+  }
+  $("#fileInput").addEventListener("change", e => {
+    for (const file of e.target.files) {
+      const type = file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : "");
+      if (!OK_TYPES.includes(type)) { toast(`${file.name}: use JPG, PNG, WebP or PDF.`); continue; }
+      pending.push({ file, name: file.name, type, preview: type.startsWith("image/") ? URL.createObjectURL(file) : null });
+    }
+    e.target.value = "";
+    renderFiles();
+  });
+  $("#fileList").addEventListener("click", e => {
+    const i = e.target.dataset.rm;
+    if (i !== undefined) { pending.splice(+i, 1); renderFiles(); }
+  });
+
+  // Shrink very large photos so they upload quickly and stay under the size limit.
+  async function prepare(file, type) {
+    if (!/^image\/(jpeg|png|webp)$/.test(type) || file.size < 3.5e6) return { blob: file, type };
+    try {
+      const bmp = await createImageBitmap(file);
+      const s = Math.min(1, 3200 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
+      return blob ? { blob, type: "image/jpeg" } : { blob: file, type };
+    } catch { return { blob: file, type }; }
+  }
+  async function uploadNew(list, progress) {
+    const out = [];
+    const total = list.filter(f => f.file).length; let n = 0;
+    for (const f of list) {
+      if (!f.file) { out.push({ asset: f.asset, name: f.name, type: f.type }); continue; }
+      progress(`Uploading file ${++n} of ${total}…`);
+      const { blob, type } = await prepare(f.file, f.type);
+      const r = await S.assets.upload(blob, { type });
+      out.push({ asset: r.id, name: f.name, type: r.contentType || type });
+    }
+    return out;
+  }
+  function readForm() {
+    const year = toInt($("#f_year").value), month = year ? toInt($("#f_month").value) : null, day = month ? toInt($("#f_day").value) : null;
+    const v = k => $("#f_" + k).value.trim();
+    return {
+      title: v("title"), year, month, day, circa: $("#f_circa").checked,
+      parish: $("#f_parish").value, type: $("#f_type").value, place: v("place"),
+      conditions: [...form.querySelectorAll('input[name="cond"]:checked')].map(b => b.value),
+      people: v("people"), description: v("description"), transcription: v("transcription"),
+      heldBy: v("heldBy"), contributor: v("contributor")
+    };
+  }
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (saving) return;
+    const data = readForm();
+    if (!data.title) { $("#f_title").focus(); toast("Give the document a title."); return; }
+    saving = true; $("#saveBtn").disabled = true;
+    const prog = t => { $("#formProgress").textContent = t; };
+    try {
+      const prev = formCtx.doc;
+      const files = await uploadNew(pending, prog);
+      prog("Saving…");
+      const now = new Date().toISOString();
+      const doc = { ...(prev || {}), ...data, files, id: prev?.id || newId(), created: prev?.created || now, updated: now, submittedBy: prev?.submittedBy || S.uid || null };
+      if (formCtx.target === "docs") {
+        await S.db.doc("docs/" + doc.id).set(doc);
+      } else {
+        const items = S.mine.filter(m => m.id !== doc.id);
+        const i = S.mine.findIndex(m => m.id === doc.id);
+        items.splice(i >= 0 ? i : items.length, 0, doc);
+        await S.db.doc("submissions/" + S.uid).set({ items });
+      }
+      // Remove files that were taken off the document.
+      if (prev) await dropAssets((prev.files || []).filter(f => !files.some(g => g.asset === f.asset)));
+      $("#formDlg").close();
+      toast(formCtx.target === "docs" ? "Saved to the timeline." : prev ? "Submission updated." : "Submitted. It will appear once it's approved.");
+    } catch (err) {
+      console.error(err); prog(""); toast(errText(err), 6000);
+    } finally { saving = false; $("#saveBtn").disabled = false; }
+  });
+
+  async function dropAssets(files) {
+    if (!S.assets) return;
+    for (const f of files) { try { await S.assets.delete(f.asset); } catch {} }
+  }
+
+  $("#deleteBtn").addEventListener("click", async () => {
+    const doc = formCtx && formCtx.doc;
+    if (!doc || !(await confirmBox(`Delete “${doc.title}” and its photos from the timeline? This can't be undone.`))) return;
+    try {
+      await S.db.doc("docs/" + doc.id).delete();
+      await dropAssets(doc.files || []);
+      $("#formDlg").close(); toast("Deleted.");
+    } catch (err) { toast(errText(err)); }
+  });
+
+  // ---------- Review (owner / editors) ----------
+  async function rehost(files) {
+    // Re-save contributor uploads under an editor's account so everyone the page is shared with can see them.
+    if (!S.assets) return files;
+    const out = [];
+    for (const f of files) {
+      try {
+        const res = await fetch(blobUrl(f.asset));
+        if (!res.ok) throw 0;
+        const r = await S.assets.upload(await res.blob(), { type: f.type });
+        out.push({ ...f, asset: r.id });
+        try { await S.assets.delete(f.asset); } catch {}
+      } catch { out.push(f); }
+    }
+    return out;
+  }
+  async function removeFromQueue(item) {
+    const owner = item._owner;
+    const left = S.queue.filter(q => q._owner === owner && q.id !== item.id).map(({ _owner, ...rest }) => rest);
+    if (left.length) await S.db.doc("submissions/" + owner).set({ items: left });
+    else await S.db.doc("submissions/" + owner).delete();
+  }
+  async function approve(item, btn) {
+    if (btn) btn.disabled = true;
+    try {
+      toast("Approving…", 20000);
+      const { _owner, ...doc } = item;
+      doc.files = await rehost(doc.files || []);
+      doc.approvedAt = new Date().toISOString();
+      doc.approvedBy = S.uid || null;
+      await S.db.doc("docs/" + doc.id).set(doc);
+      await removeFromQueue(item);
+      toast(`“${doc.title}” is on the timeline.`);
+    } catch (err) { if (btn) btn.disabled = false; toast(errText(err)); }
+  }
+  async function decline(item) {
+    if (!(await confirmBox(`Decline “${item.title}”? The submission and its photos will be removed.`, "Decline"))) return;
+    try {
+      await removeFromQueue(item);
+      if (S.canDeleteAssets) await dropAssets(item.files || []);
+      toast("Submission declined.");
+    } catch (err) { toast(errText(err)); }
+  }
+  $("#queueList").addEventListener("click", e => {
+    const t = e.target.closest("button"); if (!t) return;
+    const find = id => S.queue.find(q => q.id === id);
+    if (t.dataset.qview) openView(find(t.dataset.qview), "queue");
+    if (t.dataset.approve) approve(find(t.dataset.approve), t);
+    if (t.dataset.reject) decline(find(t.dataset.reject));
+  });
+  $("#mineList").addEventListener("click", async e => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.medit) openForm({ doc: S.mine.find(m => m.id === t.dataset.medit), target: "mine" });
+    if (t.dataset.mwithdraw) {
+      const item = S.mine.find(m => m.id === t.dataset.mwithdraw);
+      if (!(await confirmBox(`Withdraw “${item.title}”?`, "Withdraw"))) return;
+      try {
+        const left = S.mine.filter(m => m.id !== item.id);
+        if (left.length) await S.db.doc("submissions/" + S.uid).set({ items: left });
+        else await S.db.doc("submissions/" + S.uid).delete();
+        await dropAssets(item.files || []);
+        toast("Withdrawn.");
+      } catch (err) { toast(errText(err)); }
+    }
+  });
+
+  // ---------- Import / export (editors) ----------
+  $("#importBtn").addEventListener("click", () => $("#importInput").click());
+  $("#importInput").addEventListener("change", async e => {
+    const file = e.target.files[0]; e.target.value = "";
+    if (!file) return;
+    let data;
+    try { data = JSON.parse(await file.text()); } catch { toast("That file isn't a valid collection export."); return; }
+    const incoming = Array.isArray(data) ? data : data && data.documents;
+    if (!Array.isArray(incoming)) { toast("That file doesn't look like a document collection."); return; }
+    let n = 0;
+    try {
+      for (const raw of incoming) {
+        if (!raw || !raw.title) continue;
+        toast(`Importing ${++n} of ${incoming.length}…`, 60000);
+        const files = [];
+        for (const f of raw.files || []) {
+          if (!f || !f.data) continue;
+          const blob = await (await fetch(f.data)).blob();
+          const type = f.type || blob.type;
+          if (!OK_TYPES.includes(type)) continue;
+          const r = await S.assets.upload(blob, { type });
+          files.push({ asset: r.id, name: f.name || "file", type: r.contentType || type });
+        }
+        const doc = { ...raw, files, id: raw.id || newId(), conditions: Array.isArray(raw.conditions) ? raw.conditions : [], submittedBy: S.uid || null, updated: new Date().toISOString() };
+        await S.db.doc("docs/" + doc.id).set(doc);
+      }
+      toast(`Imported ${n} document${n === 1 ? "" : "s"}.`);
+    } catch (err) { toast(errText(err), 6000); }
+  });
+
+  $("#exportBtn").addEventListener("click", async () => {
+    const btn = $("#exportBtn"); btn.disabled = true;
+    try {
+      toast("Preparing backup…", 60000);
+      const toData = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+      const out = [];
+      for (const d of S.docs) {
+        const files = [];
+        for (const f of d.files || []) {
+          try { const res = await fetch(blobUrl(f.asset)); if (res.ok) files.push({ name: f.name, type: f.type, data: await toData(await res.blob()) }); } catch {}
+        }
+        out.push({ ...d, files });
+      }
+      const json = JSON.stringify({ format: "la-doc-timeline", version: 1, exported: new Date().toISOString(), documents: out }, null, 2);
+      await S.downloads.save({ filename: `louisiana-documents-${new Date().toISOString().slice(0, 10)}.json`, data: json });
+      toast("Backup saved.");
+    } catch (err) {
+      toast(err && err.code === "declined" ? "Backup cancelled." : "Couldn't save the backup.");
+    } finally { btn.disabled = false; }
+  });
+
+  // ---------- Wiring ----------
+  $("#addBtn").addEventListener("click", () => openForm({ target: S.isAdmin ? "docs" : "mine" }));
+  ["#q", "#fParish", "#fType", "#fEras"].forEach(s => $(s).addEventListener("input", renderTimeline));
+  $("#timeline").addEventListener("click", e => {
+    const card = e.target.closest(".card");
+    if (card) openView(S.docs.find(d => d.id === card.dataset.id));
+  });
+  document.addEventListener("click", e => { const c = e.target.closest("[data-close]"); if (c) c.closest("dialog").close(); });
+
+  // ---------- Connect ----------
+  render();
+  async function connect() {
+    const c = window.claude;
+    if (!c || !c.use) { $("#notice").textContent = "Open this page on claude.ai to see the shared timeline."; return; }
+    const use = n => c.use(n).catch(() => null);
+    const [db, user, assets, downloads] = await Promise.all([use("db"), use("user"), use("assets"), use("downloads")]);
+    if (!db) { $("#notice").textContent = "Sign in to claude.ai to see the shared timeline."; S.loaded = true; render(); return; }
+    Object.assign(S, { db, user, assets, downloads });
+    const me = user ? await user.me() : null;
+    S.uid = me && me.id;
+    S.isAdmin = !!(me && me.canEdit);
+    const cw = user ? await user.can("data.write") : null;
+    S.canSubmit = S.isAdmin || (!!S.uid && cw !== false);
+    S.canDeleteAssets = S.isAdmin && (user ? (await user.can("assets.write")) !== false : false);
+
+    $("#addBtn").hidden = !S.canSubmit;
+    $("#addBtn").textContent = S.isAdmin ? "+ Add a document" : "+ Submit a document";
+    $("#importBtn").hidden = !(S.isAdmin && assets);
+    $("#exportBtn").hidden = !(S.isAdmin && downloads);
+    setNotice();
+
+    const slow = setTimeout(() => {
+      if (!S.loaded) $("#notice").textContent = "The shared timeline can't be reached yet. It will appear when the connection returns.";
+    }, 10000);
+    db.collection("docs").onSnapshot(snap => {
+      S.docs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      if (!snap.metadata.fromCache) { S.loaded = true; clearTimeout(slow); setNotice(); }
+      else if (S.docs.length) S.loaded = true;
+      render();
+    }, err => {
+      clearTimeout(slow); S.loaded = true;
+      $("#notice").textContent = err.code === "revoked" ? "Access to this timeline has changed." : "The shared timeline couldn't be loaded. Reload the page to try again.";
+      render();
+    });
+
+    if (S.isAdmin) {
+      db.collection("submissions").onSnapshot(snap => {
+        S.queue = snap.docs.flatMap(d => ((d.data() || {}).items || []).map(it => ({ ...it, _owner: d.id })));
+        render();
+      }, () => {});
+    } else if (S.canSubmit && S.uid) {
+      db.doc("submissions/" + S.uid).onSnapshot(snap => {
+        S.mine = snap.exists ? ((snap.data() || {}).items || []) : [];
+        render();
+      }, () => {});
+    }
+  }
+  connect().catch(err => { console.error(err); $("#notice").textContent = "The shared timeline couldn't be loaded. Reload the page to try again."; });
+})();
+</script>

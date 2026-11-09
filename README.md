@@ -35,3 +35,14 @@ To let many people contribute to one shared timeline, the next step is a small b
 | `styles.css` | Styling (light and dark mode, mobile-friendly) |
 | `data.js` | Parishes, document types, condition tags, history markers |
 | `app.js` | Storage, timeline rendering, filters, export/import |
+
+## Shared version (`shared/index.html`)
+
+A multi-user version runs as a claude.ai Artifact: https://claude.ai/artifact/8VBvwH6J9ug8pRqotkWt2y
+
+- Everyone the page is shared with sees one timeline, stored in the artifact's database.
+- **Owner and Editors** add documents directly, review submissions, edit or delete entries, import an exported collection from the standalone version, and download a backup.
+- **Contributors** submit documents with photos. Submissions wait in a review queue until the owner approves or declines them, and contributors can edit or withdraw them until then.
+- **Viewers** browse and search.
+
+Sharing is set from the artifact's Share menu on claude.ai.
