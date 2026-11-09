@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Louisiana Document Timeline</title>
-  <meta name="description" content="Add photos and scans of physical documents — land abstracts, deeds, surveys, letters — to a shared timeline of Louisiana history.">
+  <meta name="description" content="A public timeline of Louisiana land abstracts, deeds, surveys and family papers. Anyone can submit a document.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,19 +15,27 @@
         <p class="tagline">Land abstracts, deeds, surveys and family papers, placed in time.</p>
       </div>
       <div class="header-actions">
-        <button id="addBtn" class="btn primary">+ Add a document</button>
-        <details class="menu">
-          <summary class="btn">Collection ▾</summary>
+        <button id="addBtn" class="btn primary" hidden>+ Submit a document</button>
+        <details class="menu" id="adminMenu" hidden>
+          <summary class="btn">Admin ▾</summary>
           <div class="menu-panel">
-            <button id="exportBtn" class="btn ghost">Export collection (.json)</button>
-            <label class="btn ghost file-label">Import collection…
+            <label class="btn ghost file-label">Import offline collection…
               <input id="importInput" type="file" accept="application/json,.json" hidden>
             </label>
+            <button id="signOutBtn" class="btn ghost">Sign out</button>
           </div>
         </details>
       </div>
     </div>
   </header>
+
+  <div class="wrap">
+    <p id="notice" class="notice">Loading the timeline…</p>
+    <section id="queue" class="panel" hidden aria-label="Submissions waiting for review">
+      <h2 id="queueTitle">Waiting for review</h2>
+      <ul id="queueList"></ul>
+    </section>
+  </div>
 
   <section class="filters wrap" aria-label="Filter documents">
     <input id="q" type="search" placeholder="Search titles, names, descriptions, transcriptions…" aria-label="Search">
@@ -39,17 +47,18 @@
 
   <main class="wrap">
     <ol id="timeline" class="timeline" aria-live="polite"></ol>
-    <p id="empty" class="empty" hidden>No documents match. Try clearing the filters, or add one.</p>
+    <p id="empty" class="empty" hidden></p>
   </main>
 
-  <!-- Add / edit form -->
+  <!-- Submit / edit form -->
   <dialog id="formDlg" class="dlg">
-    <form id="docForm" method="dialog">
+    <form id="docForm" method="dialog" novalidate>
       <header class="dlg-head">
-        <h2 id="formTitle">Add a document</h2>
+        <h2 id="formTitle">Submit a document</h2>
         <button type="button" class="x" data-close aria-label="Close">×</button>
       </header>
       <div class="dlg-body grid">
+        <p id="formIntro" class="hint span2">Submissions are reviewed before they appear on the timeline. Photos of every page help the most.</p>
         <label class="span2">Title <span class="req">*</span>
           <input name="title" required maxlength="200" placeholder="e.g. Abstract of title, Lot 4, Section 12">
         </label>
@@ -71,12 +80,8 @@
           <p class="hint">Leave the year blank if it's unknown. The document will go under “Undated”.</p>
         </fieldset>
 
-        <label>Parish
-          <select name="parish"><option value="">Unknown</option></select>
-        </label>
-        <label>Document type
-          <select name="type"></select>
-        </label>
+        <label>Parish <select name="parish"><option value="">Unknown</option></select></label>
+        <label>Document type <select name="type"></select></label>
 
         <label class="span2">Place / legal description
           <input name="place" maxlength="300" placeholder="Town, plantation, or Section‑Township‑Range">
@@ -90,34 +95,43 @@
         <label class="span2">People named
           <input name="people" maxlength="400" placeholder="Grantor, grantee, surveyor, notary… (comma‑separated)">
         </label>
-
         <label class="span2">Story / description
-          <textarea name="description" rows="3" placeholder="Where it came from, how it survived, why it matters"></textarea>
+          <textarea name="description" rows="3" maxlength="4000" placeholder="Where it came from, how it survived, why it matters"></textarea>
         </label>
-
         <label class="span2">Transcription
-          <textarea name="transcription" rows="4" placeholder="Type out what the document says, as best you can read it"></textarea>
+          <textarea name="transcription" rows="4" maxlength="40000" placeholder="Type out what the document says, as best you can read it"></textarea>
         </label>
-
         <label>Original held by
           <input name="heldBy" maxlength="200" placeholder="Family, courthouse, archive…">
         </label>
-        <label>Contributed by
-          <input name="contributor" maxlength="120" placeholder="Your name (optional)">
+        <label>Credit as
+          <input name="contributor" maxlength="120" placeholder="Name shown publicly (optional)">
         </label>
 
+        <label class="span2" id="emailField">Your email (optional, never shown publicly)
+          <input name="email" type="email" maxlength="254" placeholder="So the reviewer can ask questions">
+        </label>
+        <!-- Spam trap: people never see this field; bots fill it in. -->
+        <label class="trap" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off"></label>
+
         <div class="span2">
-          <label>Photos or scans (JPG, PNG, PDF)
-            <input id="fileInput" type="file" accept="image/*,application/pdf" multiple>
+          <label>Photos or scans (JPG, PNG, WebP, PDF, up to 20 MB each)
+            <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple>
           </label>
+          <p class="hint">Large photos are resized to 3200 pixels on the long side, which keeps handwriting legible.</p>
           <ul id="fileList" class="file-list"></ul>
         </div>
+
+        <label class="check span2" id="consentField">
+          <input name="consent" type="checkbox"> I have the right to share these photos, and I understand they will be public if approved.
+        </label>
       </div>
       <footer class="dlg-foot">
         <button type="button" id="deleteBtn" class="btn danger" hidden>Delete</button>
+        <span id="formProgress" class="progress" aria-live="polite"></span>
         <span class="spacer"></span>
         <button type="button" class="btn" data-close>Cancel</button>
-        <button type="submit" class="btn primary">Save</button>
+        <button type="submit" id="saveBtn" class="btn primary">Submit for review</button>
       </footer>
     </form>
   </dialog>
@@ -131,15 +145,51 @@
     <div id="viewBody" class="dlg-body"></div>
     <footer class="dlg-foot">
       <span class="spacer"></span>
-      <button type="button" id="editBtn" class="btn">Edit</button>
+      <button type="button" id="editBtn" class="btn" hidden>Edit</button>
       <button type="button" class="btn primary" data-close>Close</button>
     </footer>
   </dialog>
 
+  <!-- Admin sign-in -->
+  <dialog id="signInDlg" class="dlg narrow">
+    <form id="signInForm" method="dialog">
+      <header class="dlg-head">
+        <h2>Admin sign-in</h2>
+        <button type="button" class="x" data-close aria-label="Close">×</button>
+      </header>
+      <div class="dlg-body grid">
+        <p class="hint span2">Enter your admin email and we'll send you a sign-in link.</p>
+        <label class="span2">Email <input name="email" type="email" required autocomplete="email"></label>
+        <p id="signInMsg" class="hint span2" aria-live="polite"></p>
+      </div>
+      <footer class="dlg-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Send link</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Lightbox -->
+  <dialog id="lightbox" class="lightbox">
+    <div class="lb-inner">
+      <img id="lbImg" alt="">
+      <button type="button" class="lb-btn lb-prev" id="lbPrev" aria-label="Previous page">‹</button>
+      <button type="button" class="lb-btn lb-next" id="lbNext" aria-label="Next page">›</button>
+      <button type="button" class="lb-btn lb-close" data-close aria-label="Close">×</button>
+      <div class="lb-cap" id="lbCap"></div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
   <footer class="site-foot wrap">
-    <p>Documents are saved in this browser. Use <strong>Collection → Export</strong> to back them up or share them with someone else, who can then <strong>Import</strong> them.</p>
+    <p>Have an old deed, abstract, survey or family paper from Louisiana? Submit a photo of it. Every submission is reviewed before it's published.</p>
+    <p><button id="signInBtn" class="linklike">Admin sign-in</button></p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
